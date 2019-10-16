@@ -1,0 +1,783 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "missing_values = ['unknown']\n",
+    "df = pd.read_csv('tcd ml 2019-20 income prediction training (with labels).csv', index_col = \"Instance\", na_values=missing_values)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Year of Record         441\n",
+      "Gender               14281\n",
+      "Age                    494\n",
+      "Country                  0\n",
+      "Size of City             0\n",
+      "Profession             322\n",
+      "University Degree     7370\n",
+      "Wears Glasses            0\n",
+      "Hair Color            7242\n",
+      "Body Height [cm]         0\n",
+      "Income in EUR            0\n",
+      "dtype: int64\n",
+      "(111993, 11)\n",
+      "Year of Record        441\n",
+      "Gender                  0\n",
+      "Age                     0\n",
+      "Country                 0\n",
+      "Size of City            0\n",
+      "Profession            322\n",
+      "University Degree       0\n",
+      "Wears Glasses           0\n",
+      "Hair Color           7271\n",
+      "Body Height [cm]        0\n",
+      "Income in EUR           0\n",
+      "dtype: int64\n",
+      "(103858, 11)\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(df.isnull().sum())\n",
+    "print(df.shape)\n",
+    "\n",
+    "#Convert text features to ordinal\n",
+    "df['University Degree'].replace(to_replace = \"0\", value ='No', inplace= True)\n",
+    "df['University Degree'].replace(to_replace = np.nan, value ='No', inplace= True)\n",
+    "df['University Degree'].replace(to_replace = \"No\", value = 0, inplace= True)\n",
+    "df['University Degree'].replace(to_replace = \"Bachelor\", value = 1, inplace= True)\n",
+    "df['University Degree'].replace(to_replace = \"Master\", value = 2, inplace= True)\n",
+    "df['University Degree'].replace(to_replace = \"PhD\", value = 4, inplace= True)\n",
+    "\n",
+    "#Delete and fill nan rows\n",
+    "df['Gender'].replace(to_replace = \"0\", value = np.nan, inplace= True)\n",
+    "df['Gender'].fillna('missing', inplace= True)\n",
+    "df['Hair Color'].replace(to_replace = \"0\", value = np.nan, inplace= True)\n",
+    "#df['Year of Record'].fillna(df['Year of Record'].median(), inplace=True)\n",
+    "df['Age'].fillna(df['Age'].median(), inplace=True)\n",
+    "df['Body Height [cm]'].fillna(df['Body Height [cm]'].median(), inplace = True)\n",
+    "print(df.isnull().sum())\n",
+    "\n",
+    "df = df.dropna(subset=['Gender','Age','Year of Record','Country','Size of City','Profession','Wears Glasses','Body Height [cm]','Hair Color'])\n",
+    "\n",
+    "#Delete garbage data\n",
+    "df = df[df['Income in EUR']>0]\n",
+    "df.isnull().sum()\n",
+    "print(df.shape)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(103858, 11)\n",
+      "(101648, 11)\n",
+      "(101648, 11)\n"
+     ]
+    }
+   ],
+   "source": [
+    "#Delete outliers with z score\n",
+    "mean = df['Income in EUR'].mean()\n",
+    "std = df['Income in EUR'].std()\n",
+    "print(df.shape)\n",
+    "df = df[(df['Income in EUR']-mean)/std<3]\n",
+    "print(df.shape)\n",
+    "df = df[(mean-df['Income in EUR'])/std<3]\n",
+    "print(df.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Year of Record</th>\n",
+       "      <th>Gender</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>Country</th>\n",
+       "      <th>Size of City</th>\n",
+       "      <th>Profession</th>\n",
+       "      <th>University Degree</th>\n",
+       "      <th>Wears Glasses</th>\n",
+       "      <th>Hair Color</th>\n",
+       "      <th>Body Height [cm]</th>\n",
+       "      <th>Income</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Instance</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>111994</th>\n",
+       "      <td>1992.0</td>\n",
+       "      <td>other</td>\n",
+       "      <td>21.0</td>\n",
+       "      <td>Honduras</td>\n",
+       "      <td>391652</td>\n",
+       "      <td>senior project analyst</td>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Brown</td>\n",
+       "      <td>153</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111995</th>\n",
+       "      <td>1986.0</td>\n",
+       "      <td>other</td>\n",
+       "      <td>34.0</td>\n",
+       "      <td>Kyrgyzstan</td>\n",
+       "      <td>33653</td>\n",
+       "      <td>greeter</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Black</td>\n",
+       "      <td>163</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111996</th>\n",
+       "      <td>1994.0</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>53.0</td>\n",
+       "      <td>Portugal</td>\n",
+       "      <td>34765</td>\n",
+       "      <td>liaison</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Blond</td>\n",
+       "      <td>153</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111997</th>\n",
+       "      <td>1984.0</td>\n",
+       "      <td>missing</td>\n",
+       "      <td>29.0</td>\n",
+       "      <td>Uruguay</td>\n",
+       "      <td>1494132</td>\n",
+       "      <td>occupational therapist</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Black</td>\n",
+       "      <td>154</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111998</th>\n",
+       "      <td>2007.0</td>\n",
+       "      <td>other</td>\n",
+       "      <td>17.0</td>\n",
+       "      <td>Serbia</td>\n",
+       "      <td>120661</td>\n",
+       "      <td>portfolio manager</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>Red</td>\n",
+       "      <td>191</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "          Year of Record   Gender   Age     Country  Size of City  \\\n",
+       "Instance                                                            \n",
+       "111994            1992.0    other  21.0    Honduras        391652   \n",
+       "111995            1986.0    other  34.0  Kyrgyzstan         33653   \n",
+       "111996            1994.0  missing  53.0    Portugal         34765   \n",
+       "111997            1984.0  missing  29.0     Uruguay       1494132   \n",
+       "111998            2007.0    other  17.0      Serbia        120661   \n",
+       "\n",
+       "                      Profession  University Degree  Wears Glasses Hair Color  \\\n",
+       "Instance                                                                        \n",
+       "111994    senior project analyst                  2              1      Brown   \n",
+       "111995                   greeter                  1              0      Black   \n",
+       "111996                   liaison                  1              1      Blond   \n",
+       "111997    occupational therapist                  0              0      Black   \n",
+       "111998         portfolio manager                  0              0        Red   \n",
+       "\n",
+       "          Body Height [cm]  Income  \n",
+       "Instance                            \n",
+       "111994                 153     NaN  \n",
+       "111995                 163     NaN  \n",
+       "111996                 153     NaN  \n",
+       "111997                 154     NaN  \n",
+       "111998                 191     NaN  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_test = pd.read_csv('tcd ml 2019-20 income prediction test (without labels).csv', index_col = \"Instance\", na_values=missing_values)\n",
+    "\n",
+    "#Convert text feature to ordinal\n",
+    "df_test['University Degree'].replace(to_replace = \"0\", value ='No', inplace= True)\n",
+    "df_test['University Degree'].replace(to_replace = np.nan, value ='No', inplace= True)\n",
+    "df_test['University Degree'].replace(to_replace = \"No\", value = 0, inplace= True)\n",
+    "df_test['University Degree'].replace(to_replace = \"Bachelor\", value = 1, inplace= True)\n",
+    "df_test['University Degree'].replace(to_replace = \"Master\", value = 2, inplace= True)\n",
+    "df_test['University Degree'].replace(to_replace = \"PhD\", value = 4, inplace= True)\n",
+    "\n",
+    "#Fill nan rows\n",
+    "df_test['Year of Record'].fillna(df_test['Year of Record'].median(), inplace=True)\n",
+    "df_test['Gender'].replace(to_replace = \"0\", value = np.nan, inplace= True)\n",
+    "df_test['Gender'].fillna('missing', inplace=True)\n",
+    "df_test['Age'].fillna(df_test['Age'].median(), inplace=True)\n",
+    "df_test['Body Height [cm]'].fillna(df_test['Body Height [cm]'].median(), inplace = True)\n",
+    "df_test['Hair Color'].replace(to_replace = \"0\", value = np.nan, inplace= True)\n",
+    "\n",
+    "df_test['Country'].fillna(df_test['Country'].value_counts().idxmax(), inplace=True)\n",
+    "df_test['Size of City'].fillna(df_test['Size of City'].mean(), inplace=True)\n",
+    "df_test['Profession'].fillna(df_test['Profession'].value_counts().idxmax(), inplace=True)\n",
+    "df_test['Hair Color'].fillna(df_test['Hair Color'].value_counts().idxmax(), inplace=True)\n",
+    "df_test['Wears Glasses'].fillna(df_test['Wears Glasses'].value_counts().idxmax(), inplace=True)\n",
+    "\n",
+    "df_test.head()\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/usr/local/anaconda3/lib/python3.7/site-packages/ipykernel_launcher.py:1: FutureWarning: Sorting because non-concatenation axis is not aligned. A future version\n",
+      "of pandas will change to not sort by default.\n",
+      "\n",
+      "To accept the future behavior, pass 'sort=False'.\n",
+      "\n",
+      "To retain the current behavior and silence the warning, pass 'sort=True'.\n",
+      "\n",
+      "  \"\"\"Entry point for launching an IPython kernel.\n",
+      "/usr/local/anaconda3/lib/python3.7/site-packages/IPython/core/interactiveshell.py:3325: FutureWarning: specifying 'categories' or 'ordered' in .astype() is deprecated; pass a CategoricalDtype instead\n",
+      "  exec(code_obj, self.user_global_ns, self.user_ns)\n"
+     ]
+    }
+   ],
+   "source": [
+    "all_data = pd.concat((df,df_test))\n",
+    "for column in all_data.select_dtypes(include=[np.object]).columns:\n",
+    "    df[column] = df[column].astype('category', categories = all_data[column].unique())\n",
+    "    df_test[column] = df_test[column].astype('category', categories = all_data[column].unique())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Year of Record                     0\n",
+       "Age                                0\n",
+       "Size of City                       0\n",
+       "University Degree                  0\n",
+       "Wears Glasses                      0\n",
+       "Body Height [cm]                   0\n",
+       "missing                            0\n",
+       "female                             0\n",
+       "male                               0\n",
+       "Belarus                            0\n",
+       "Singapore                          0\n",
+       "Norway                             0\n",
+       "Cuba                               0\n",
+       "United Arab Emirates               0\n",
+       "Liberia                            0\n",
+       "State of Palestine                 0\n",
+       "Israel                             0\n",
+       "South Sudan                        0\n",
+       "Kyrgyzstan                         0\n",
+       "Togo                               0\n",
+       "Finland                            0\n",
+       "Papua New Guinea                   0\n",
+       "Paraguay                           0\n",
+       "Belgium                            0\n",
+       "Costa Rica                         0\n",
+       "Senegal                            0\n",
+       "Congo                              0\n",
+       "Slovakia                           0\n",
+       "Burundi                            0\n",
+       "Portugal                           0\n",
+       "                                  ..\n",
+       "animalbreeder                      0\n",
+       "air & noise pollution inspector    0\n",
+       "community coordinator              0\n",
+       "accountable project manager        0\n",
+       "collector                          0\n",
+       "computer aide                      0\n",
+       "blake fellow                       0\n",
+       "accountant                         0\n",
+       "audit supervisor                   0\n",
+       "cartographer                       0\n",
+       "asset management specialist        0\n",
+       "administrative manager             0\n",
+       "account executive                  0\n",
+       "astronomer                         0\n",
+       "brokerage clerk                    0\n",
+       "asset manager                      0\n",
+       "computer associate                 0\n",
+       "administrative coordinator         0\n",
+       "certified it administrator         0\n",
+       "cashier                            0\n",
+       "community assistant                0\n",
+       "aerospace engineer                 0\n",
+       "apparel patternmaker               0\n",
+       "clinical case supervisor           0\n",
+       "baggage porter                     0\n",
+       "Blond                              0\n",
+       "Black                              0\n",
+       "Brown                              0\n",
+       "Red                                0\n",
+       "Unknown                            0\n",
+       "Length: 1523, dtype: int64"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#One-hot encoding\n",
+    "dummies_gender = pd.get_dummies(df.Gender)\n",
+    "dummies_country = pd.get_dummies(df.Country)\n",
+    "dummies_profession = pd.get_dummies(df.Profession)\n",
+    "dummies_haircolor = pd.get_dummies(df['Hair Color'])\n",
+    "merged = pd.concat([df,dummies_gender,dummies_country,dummies_profession,dummies_haircolor], axis = 'columns')\n",
+    "y = merged['Income in EUR']\n",
+    "merged = merged.drop(['Gender','Country','other', 'Income in EUR','Profession','Hair Color'],axis='columns')\n",
+    "merged.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nX_train, X_test, Y_train, Y_test = train_test_split (merged, y, test_size = 0.20, random_state=42)\\nfrom sklearn.linear_model import LinearRegression\\nfrom sklearn.linear_model import Lasso\\nfrom sklearn.linear_model import ElasticNet\\nfrom sklearn.tree import DecisionTreeRegressor\\nfrom sklearn.neighbors import KNeighborsRegressor\\nfrom sklearn.ensemble import GradientBoostingRegressor\\n\\n\\npipelines = []\\npipelines.append((\\'ScaledLR\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'LR\\',LinearRegression())])))\\npipelines.append((\\'ScaledLASSO\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'LASSO\\', Lasso())])))\\npipelines.append((\\'ScaledEN\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'EN\\', ElasticNet())])))\\npipelines.append((\\'ScaledKNN\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'KNN\\', KNeighborsRegressor())])))\\npipelines.append((\\'ScaledCART\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'CART\\', DecisionTreeRegressor())])))\\npipelines.append((\\'ScaledGBM\\', Pipeline([(\\'Scaler\\', StandardScaler()),(\\'GBM\\', GradientBoostingRegressor())])))\\n\\nresults = []\\nnames = []\\nfor name, model in pipelines:\\n    kfold = KFold(n_splits=10, random_state=21)\\n    cv_results = cross_val_score(model, X_train, Y_train, cv=kfold, scoring=\\'neg_mean_squared_error\\')\\n    results.append(cv_results)\\n    names.append(name)\\n    msg = \"%s: %f (%f)\" % (name, cv_results.mean(), cv_results.std())\\n    print(msg)\\n'"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#log the big number data\n",
+    "merged['Size of City'] = np.log(merged['Size of City'])\n",
+    "merged['Year of Record'] = np.log(merged['Year of Record'])\n",
+    "merged['Body Height [cm]'] = np.log(merged['Body Height [cm]'])\n",
+    "y = np.log(y)\n",
+    "from sklearn.feature_selection import RFE\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.model_selection import cross_val_score\n",
+    "from sklearn.model_selection import KFold\n",
+    "from sklearn.pipeline import Pipeline\n",
+    "from sklearn.preprocessing import StandardScaler\n",
+    "\n",
+    "#This is to find the best regression model for the dataset; while it takes too much time run it fully, I commented it out from the inline result\n",
+    "'''\n",
+    "X_train, X_test, Y_train, Y_test = train_test_split (merged, y, test_size = 0.20, random_state=42)\n",
+    "from sklearn.linear_model import LinearRegression\n",
+    "from sklearn.linear_model import Lasso\n",
+    "from sklearn.linear_model import ElasticNet\n",
+    "from sklearn.tree import DecisionTreeRegressor\n",
+    "from sklearn.neighbors import KNeighborsRegressor\n",
+    "from sklearn.ensemble import GradientBoostingRegressor\n",
+    "\n",
+    "\n",
+    "pipelines = []\n",
+    "pipelines.append(('ScaledLR', Pipeline([('Scaler', StandardScaler()),('LR',LinearRegression())])))\n",
+    "pipelines.append(('ScaledLASSO', Pipeline([('Scaler', StandardScaler()),('LASSO', Lasso())])))\n",
+    "pipelines.append(('ScaledEN', Pipeline([('Scaler', StandardScaler()),('EN', ElasticNet())])))\n",
+    "pipelines.append(('ScaledKNN', Pipeline([('Scaler', StandardScaler()),('KNN', KNeighborsRegressor())])))\n",
+    "pipelines.append(('ScaledCART', Pipeline([('Scaler', StandardScaler()),('CART', DecisionTreeRegressor())])))\n",
+    "pipelines.append(('ScaledGBM', Pipeline([('Scaler', StandardScaler()),('GBM', GradientBoostingRegressor())])))\n",
+    "\n",
+    "results = []\n",
+    "names = []\n",
+    "for name, model in pipelines:\n",
+    "    kfold = KFold(n_splits=10, random_state=21)\n",
+    "    cv_results = cross_val_score(model, X_train, Y_train, cv=kfold, scoring='neg_mean_squared_error')\n",
+    "    results.append(cv_results)\n",
+    "    names.append(name)\n",
+    "    msg = \"%s: %f (%f)\" % (name, cv_results.mean(), cv_results.std())\n",
+    "    print(msg)\n",
+    "'''"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/usr/local/anaconda3/lib/python3.7/site-packages/sklearn/model_selection/_split.py:1978: FutureWarning: The default value of cv will change from 3 to 5 in version 0.22. Specify it explicitly to silence this warning.\n",
+      "  warnings.warn(CV_WARNING, FutureWarning)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "LassoCV(alphas=None, copy_X=True, cv='warn', eps=0.001, fit_intercept=True,\n",
+       "        max_iter=100000, n_alphas=100, n_jobs=None, normalize=False,\n",
+       "        positive=False, precompute='auto', random_state=None,\n",
+       "        selection='cyclic', tol=0.0001, verbose=False)"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from sklearn.linear_model import LassoCV\n",
+    "from sklearn.ensemble import ExtraTreesClassifier\n",
+    "from sklearn.feature_selection import SelectFromModel\n",
+    "#Standardize the data\n",
+    "scaler = StandardScaler()\n",
+    "merged = scaler.fit_transform(merged)\n",
+    "model = LassoCV(normalize= False, max_iter = 100000)\n",
+    "model.fit(merged, y)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.8684407028274769"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "model.score(merged,y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#One-hot encoding\n",
+    "dummies_gender = pd.get_dummies(df_test.Gender)\n",
+    "dummies_country = pd.get_dummies(df_test.Country)\n",
+    "dummies_profession = pd.get_dummies(df_test.Profession)\n",
+    "dummies_haircolor = pd.get_dummies(df_test['Hair Color'])\n",
+    "new_merged = pd.concat([df_test,dummies_gender,dummies_country,dummies_profession,dummies_haircolor], axis = 'columns')\n",
+    "#merged = merged.drop(['Gender','Country','Profession','other', 'Income'],axis='columns')\n",
+    "new_merged = new_merged.drop(['Gender','Country','other', 'Income','Profession','Hair Color'],axis='columns')\n",
+    "\n",
+    "new_merged['Size of City'] = np.log(new_merged['Size of City'])\n",
+    "new_merged['Year of Record'] = np.log(new_merged['Year of Record'])\n",
+    "new_merged['Body Height [cm]'] = np.log(new_merged['Body Height [cm]'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "new_merged = scaler.transform(new_merged)\n",
+    "result = model.predict(new_merged)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_result = pd.read_csv('tcd ml 2019-20 income prediction test (without labels).csv', na_values=missing_values,index_col='Instance')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[10.20945918  9.65002578 10.4170901  ... 11.1609789  12.06729418\n",
+      " 11.89249082]\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(result)\n",
+    "df_result['Income'] = np.exp(result)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Year of Record</th>\n",
+       "      <th>Gender</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>Country</th>\n",
+       "      <th>Size of City</th>\n",
+       "      <th>Profession</th>\n",
+       "      <th>University Degree</th>\n",
+       "      <th>Wears Glasses</th>\n",
+       "      <th>Hair Color</th>\n",
+       "      <th>Body Height [cm]</th>\n",
+       "      <th>Income</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Instance</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Empty DataFrame\n",
+       "Columns: [Year of Record, Gender, Age, Country, Size of City, Profession, University Degree, Wears Glasses, Hair Color, Body Height [cm], Income]\n",
+       "Index: []"
+      ]
+     },
+     "execution_count": 14,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_result[df_result['Income']<0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_result = df_result.drop(df_result.columns[[0,1,2,3,4,5,6,7,8,9]],axis=1)\n",
+    "df_result.to_csv('Result4.0 Lasso with hair color and missing gender as new column.csv')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Income</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Instance</th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>111994</th>\n",
+       "      <td>27158.875654</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111995</th>\n",
+       "      <td>15522.188283</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111996</th>\n",
+       "      <td>33426.026069</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111997</th>\n",
+       "      <td>137197.274315</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>111998</th>\n",
+       "      <td>16035.246095</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                 Income\n",
+       "Instance               \n",
+       "111994     27158.875654\n",
+       "111995     15522.188283\n",
+       "111996     33426.026069\n",
+       "111997    137197.274315\n",
+       "111998     16035.246095"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_result.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
